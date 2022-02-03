@@ -1,12 +1,12 @@
-Code for paper "ISNet: Costless and Implicit Image Segmentation for Deep Classifiers, with Application in COVID-19 Detection".
+Official code for paper "ISNet: Costless and Implicit Image Segmentation for Deep Classifiers, with Application in COVID-19 Detection".
 
 LRPDenseNet.py: code to create a DenseNet, based on original TorchVision model, but  without in place ReLU and with an extra ReLU in transition layers.
 
-ISNetFunctions.py: Functions to define heatmap loss and relevance propagation. 
+ISNetFunctions.py: functions to define heatmap loss and relevance propagation. 
 
-ISNetLayers.py: Functions to create ISNet.
+ISNetLayers.py: functions to create an  ISNet.
 
-globals.py: file of global variables, for skip connections between classifier and LRP block.
+globals.py: global variables, for skip connections between classifier and LRP block.
 
 TrainedModels: parameters for models trained in the paper.
 
