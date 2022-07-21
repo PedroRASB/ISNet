@@ -361,15 +361,22 @@ class LRPMTUNet(nn.Module):
         globals.XI=[]
         if (self.MTUNet.ReturnMasks):
             y,masks=self.MTUNet(x)
-            output=(y,masks)
         else:
             y=self.MTUNet(x)
-            output=(y)
         if(self.heat):
             maps=self.LRPBlock(x=x,y=y)
-            output=(*output,maps)
+            
         #clean global variables:
         globals.X=[]
         globals.XI=[]
         
-        return output
+        if (self.heat):
+            if(self.MTUNet.ReturnMasks):
+                return y,masks,maps
+            else:
+                return y,maps
+        else:
+            if(self.MTUNet.ReturnMasks):
+                return y,masks
+            else:
+                return y
