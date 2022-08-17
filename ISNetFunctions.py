@@ -4,13 +4,12 @@ import globals
 
 Detached=True
 
-def LRPLossActivated (heatmap, mask,eps=1e-4,E=1,multiMask=False):
+def LRPLossActivated (heatmap, mask,eps=1e-4,E=1):
     #function to calculate the heatmap loss.
     #heatmap: heatmap, raw and unnormalized
     #mask: 1 in the region of interest, 0 everywhere else
     #E: if lower makes l term (unwanted attention loss) steeper
     #eps: avoids infinity, should be small
-    #multiMask:accepts one mask per class
 
     heatmap=heatmap.float()
     mask=mask.float()
@@ -28,8 +27,7 @@ def LRPLossActivated (heatmap, mask,eps=1e-4,E=1,multiMask=False):
         length=heatmap.shape[-1]
         width=heatmap.shape[-2]
         
-        if (not multiMask):
-            mask=mask.unsqueeze(1).repeat(1,classesSize,1,1,1)
+        mask=mask.unsqueeze(1).repeat(1,classesSize,1,1,1)
             
 
         #invert mask: 1 in the region without interest
@@ -625,65 +623,6 @@ def LRPConvBNReLU(layer,BN,rK,aJ,aK,e,aKConv,Ch0=0,Ch1=None):
     if (Detached and BN.bias is not None):
         aK=nn.functional.conv2d(aJ,weights,biases,stride=layer.stride,padding=layer.padding)
         
-    aK=aK.unsqueeze(1).repeat(1,numOutputs,1,1,1)
-        
-    z=aK+stabilizer(aK=aK,e=e)
-    #element-wise inversion:s
-    s=torch.div(rK,z)
-    #shape: batch,o,k
-        
-    AJ=aJ.unsqueeze(1).repeat(1,numOutputs,1,1,1)        
-        
-    s=s.view(batchSize*numOutputs,s.shape[-3],s.shape[-2],s.shape[-1])
-        
-    #transpose conv:
-    if(isinstance(layer.stride, int)):
-        if(layer.stride>1):
-            c=nn.functional.conv_transpose2d(s,weight=weights,bias=None,
-                                       stride=layer.stride,padding=layer.padding,
-                                        output_padding=(1,1))
-        else:
-            c=nn.functional.conv_transpose2d(s,weight=weights,bias=None,
-                                       stride=layer.stride,padding=layer.padding)
-    else:
-        if(layer.stride[0]>1 or layer.stride[1]>1):
-            c=nn.functional.conv_transpose2d(s,weight=weights,bias=None,
-                                       stride=layer.stride,padding=layer.padding,
-                                        output_padding=(1,1))
-        else:
-            c=nn.functional.conv_transpose2d(s,weight=weights,bias=None,
-                                       stride=layer.stride,padding=layer.padding)
-            
-    c=c.view(batchSize,numOutputs,c.shape[-3],c.shape[-2],c.shape[-1])
-        
-    RJ=torch.mul(AJ,c)
-
-    return RJ
-
-def LRPBNConvReLU(layer,BN,rK,aJ,aK,e,Ch0=0,Ch1=None):
-    #used to propagate relevance through the sequence: Batchnorm, Convolution, ReLU
-    #layer: convolutional layer throgh which we propagate relevance
-    #e: LRP-e term. Use e=0 for LRP0
-    #rK: relevance at layer L ReLU output
-    #aJ: values at layer L BN input
-    #aK: activations after convolution
-    #BN: batch normalization layer
-    #Ch0 and Ch1: delimits the batch normalization channels that originate from the concolutional layer
-    
-    aK=aK[:,Ch0:Ch1,:,:]
-    rK=rK[:,:,Ch0:Ch1,:,:]
-    
-    #size of batch dimension (0):
-    batchSize=rK.shape[0]
-    #size of classes dimension (1):
-    numOutputs=rK.shape[1]
-    #BN parameters:
-    BNChannels=aK.shape[1]
-    
-    weights=FuseBN(layerWeights=layer.weight, BN=BN, aKConv=aJ,
-                   Ch0=Ch0,Ch1=Ch1,layerBias=layer.bias,
-                   bias=False,BNbeforeReLU=False)
-    #no detach due to small border bias inconsistency with padding
     aK=aK.unsqueeze(1).repeat(1,numOutputs,1,1,1)
         
     z=aK+stabilizer(aK=aK,e=e)
