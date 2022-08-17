@@ -11,7 +11,7 @@ import torch.multiprocessing
 torch.multiprocessing.set_sharing_strategy('file_system')
 
 class IsDense121Lightning(pl.LightningModule):
-    def __init__(self,multiLabel,multiMask,
+    def __init__(self,multiLabel,
                  classes,
                  e=10e-2,heat=True,
                  Zb=True,pretrained=False,
@@ -32,7 +32,6 @@ class IsDense121Lightning(pl.LightningModule):
         #LR:learning rate
         #P: loss balancing hyperparameter
         #E: heatmap loss hyperparameter
-        #multiMask: for a segmentation mask per class
         #multiLabel: for multi-label problems
         #saveMaps: saves test hetamaps
         #optim: SGD or Adam
@@ -52,7 +51,6 @@ class IsDense121Lightning(pl.LightningModule):
         self.lr=LR
         self.P=P
         self.E=E
-        self.multiMask=multiMask
         self.multiLabel=multiLabel
         self.saveMaps=saveMaps
         self.mapsLocation=mapsLocation
@@ -101,8 +99,7 @@ class IsDense121Lightning(pl.LightningModule):
         
         if (self.heat):
             heatmapLoss=ISNetFunctions.LRPLossActivated(heatmaps,masks,
-                                                        E=self.E,
-                                                        multiMask=self.multiMask)
+                                                        E=self.E)
             return classifierLoss,heatmapLoss
         else:
             return classifierLoss
