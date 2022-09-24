@@ -26,3 +26,6 @@ net=ISNetLayers.IsDense(DenseNet,heat=True,e=1e-2, Zb=True)
 
 ## Citation
 Bassi, Pedro RAS, and Andrea Cavalli. "ISNet: Costless and Implicit Image Segmentation for Deep Classifiers, with Application in COVID-19 Detection." arXiv preprint arXiv:2202.00232 (2022).
+
+## Observations for the Training Procedure
+For better stability and convergence in the training procedure, we suggest employing gradient clipping (we used norm of 1) and deterministic operations, which may be selected with the following code: torch.use_deterministic_algorithms(True).
