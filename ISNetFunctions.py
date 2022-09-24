@@ -34,17 +34,12 @@ def LRPLossActivated (heatmap, mask,eps=1e-4,E=1):
         ones=torch.ones(mask.shape).type_as(heatmap)
         Imask=ones-mask
         
-        #Erase heatmap in region without interest:
+        #Zero heatmap in region of interest:
         heatmap=torch.mul(Imask,heatmap)
 
         #sum all image dimensions:
         l=torch.sum(heatmap,dim=[-3,-2,-1])
  
-        #if(torch.isnan(heatmap).any()):
-        #    print('NaN heatmap')
-        #if(torch.isnan(l).any()):
-        #    print('NaN l')
-        #print(torch.mean(l))
         l=l/(l+E)
         
         if(torch.isnan(l).any()):
