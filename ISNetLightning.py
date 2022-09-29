@@ -155,8 +155,9 @@ class IsDense121Lightning(pl.LightningModule):
 
     def validation_epoch_end(self, validation_step_outputs):
         loss=validation_step_outputs[0]['loss'].unsqueeze(0)
-        for out in validation_step_outputs:
-            loss=torch.cat((loss,out['loss'].unsqueeze(0)),dim=0)
+        for i,out in enumerate(validation_step_outputs,0):
+            if(i!=0):
+                loss=torch.cat((loss,out['loss'].unsqueeze(0)),dim=0)
 
         self.log('val_loss',torch.mean(loss,dim=0),
                  on_epoch=True,sync_dist=True)
@@ -201,12 +202,13 @@ class IsDense121Lightning(pl.LightningModule):
             images=test_step_outputs[0]['images']
             heatmaps=test_step_outputs[0]['heatmaps']
             
-        for out in test_step_outputs:
-            pred=torch.cat((pred,out['pred']),dim=0)
-            labels=torch.cat((labels,out['labels']),dim=0)
-            if (self.heat):
-                images=torch.cat((images,out['images']),dim=0)
-                heatmaps=torch.cat((heatmaps,out['heatmaps']),dim=0)
+        for i,out in enumerate(test_step_outputs,0):
+            if (i!=0):
+                pred=torch.cat((pred,out['pred']),dim=0)
+                labels=torch.cat((labels,out['labels']),dim=0)
+                if (self.heat):
+                    images=torch.cat((images,out['images']),dim=0)
+                    heatmaps=torch.cat((heatmaps,out['heatmaps']),dim=0)
                 
         if (self.heat):
             self.TestResults=pred,labels,images,heatmaps
