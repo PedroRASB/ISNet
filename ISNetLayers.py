@@ -481,7 +481,13 @@ class _LRPDenseNet(nn.ModuleDict):
         #register hooks:
         f.resetGlobals()
         model=f.InsertHooks(DenseNet)
-        DenseNet.classifier.register_forward_hook(f.AppendInput)
+        
+        try:
+            classifier=model['classifier'][0]
+        except:
+            #model with dropout
+            classifier=model['classifier']['1'][0]
+        classifier.register_forward_hook(f.AppendInput)
         
         #classifier and last layers:
         self.add_module('LRPFinalLayers',
