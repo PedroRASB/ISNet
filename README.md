@@ -14,7 +14,7 @@ globals.py: global variables, for skip connections between classifier and LRP bl
 
 ISNetLightning.py: PyTorch Lightning model of the ISNet, use for simple multi-GPU/multi-node training.
 
-AlternativeModels: Pytorch implementations of benchmark DNNs used in the paper (AG-Sononet, U-Net, multi-task U-Net) and code to produce their heatmaps. Note that hese maps were not used for background relevance minimization, thus, the alternative DNNs were not tested as ISNets. For the AG-Sononet please follow the installation instructions in https://github.com/ozan-oktay/Attention-Gated-Networks, afterwards, to create LRP heatmaps substitute the file sononet_grid_attention.py (in Attention-Gated-Networks-master/models/networks) by the version we provide, and employ the code in AGSononetLRP.py.
+AlternativeModels: Pytorch implementations of benchmark DNNs used in the paper (AG-Sononet, U-Net, multi-task U-Net, HAM and GAIN) and code to produce their LRP heatmaps. For the standard DenseNet121, use the code in LRPDenseNet.py. Note that the LRP maps for the alternative models were not used for background relevance minimization, thus, the alternative DNNs were not tested as ISNets. For the AG-Sononet please follow the installation instructions in https://github.com/ozan-oktay/Attention-Gated-Networks, afterwards, to create LRP heatmaps substitute the file sononet_grid_attention.py (in Attention-Gated-Networks-master/models/networks) by the version we provide, and employ the code in AGSononetLRP.py. For HAM, please visit https://github.com/oyxhust/HAM. We provide code to implement the DNN in PyTorch Lightning.
 
 ## ISNet Creation Example
 Defining a DenseNet121 based ISNet:
