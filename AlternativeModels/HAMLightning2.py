@@ -1,4 +1,5 @@
 #based on https://github.com/oyxhust/HAM
+#please download the code in the link above, and place it in a folder called HAM, for this code to work
 
 import torch
 import torch.nn.functional as F
