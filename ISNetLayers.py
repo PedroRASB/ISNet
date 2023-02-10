@@ -199,7 +199,20 @@ class LRPMaxPool (nn.Module):
     def forward (self,rK,aJ,aK):
         y= f.LRPMaxPool2d(layer=self.layer,rK=rK,aJ=aJ,aK=aK,e=self.e)
         return y
-
+    
+class LRPBNConvReLU (nn.Module):
+    def __init__(self,layer,BN,e,Ch0=0,Ch1=None):
+        super().__init__()
+        self.e=e
+        self.layer=layer
+        self.BN=BN
+        self.Ch=[Ch0,Ch1]
+        
+    def forward (self,rK,aJ,aK):         
+        y= f.LRPBNConvReLU(layer=self.layer,BN=self.BN,rK=rK,aK=aK,
+                           aJ=aJ,e=self.e,
+                           Ch0=self.Ch[0],Ch1=self.Ch[1])
+        return y
     
 #DenseNet specific modules:
     

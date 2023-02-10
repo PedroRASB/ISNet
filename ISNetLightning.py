@@ -115,7 +115,7 @@ class IsDense121Lightning(pl.LightningModule):
             classifierLoss=self.criterion(outputs,labels.squeeze(1))
         
         if (self.heat):
-            heatmapLoss=ISNetFunctions.LRPLossElementWiseCEValleysGWRP(heatmaps,masks,
+            heatmapLoss=ISNetFunctions.LRPLossCEValleysGWRP(heatmaps,masks,
                                                                        norm=self.norm,
                                                                        cut=self.cut,cut2=self.cut2,
                                                                        A=self.A,B=self.B,d=self.d,

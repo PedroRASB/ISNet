@@ -16,7 +16,7 @@ def GlobalWeightedRankPooling(x,d=0.9):
     x=x.sum(-1)/weights.sum()
     return x
 
-def LRPLossElementWiseCEValleysGWRP (heatmap, mask, cut=1, cut2=25, reduction='mean', 
+def LRPLossCEValleysGWRP (heatmap, mask, cut=1, cut2=25, reduction='mean', 
                                      norm=True, A=1, B=3, E=1,d=0.9,normRoI=True,var=False,
                                      alternativeCut=False,detachNorm=False,multiMask=False,
                                      eps=1e-10):
