@@ -27,7 +27,7 @@ globals.py: global variables, for skip connections between classifier and LRP bl
 
 ISNetLightning.py: PyTorch Lightning model of the ISNet, use for simple multi-GPU/multi-node training.
 
-AlternativeModels: Pytorch implementations of benchmark DNNs used in the paper (AG-Sononet, U-Net, multi-task U-Net, HAM and GAIN). For the standard DenseNet121, use the code in LRPDenseNet.py. For the AG-Sononet please follow the installation instructions in https://github.com/ozan-oktay/Attention-Gated-Networks, afterwards, to create LRP heatmaps substitute the file sononet_grid_attention.py (in Attention-Gated-Networks-master/models/networks) by the version we provide, and employ the code in AGSononetLRP.py. For HAM, please visit https://github.com/oyxhust/HAM. We provide code to implement the DNN in PyTorch Lightning.
+AlternativeModels: Pytorch implementations of benchmark DNNs used in the paper (AG-Sononet, U-Net, multi-task U-Net, HAM and GAIN). For the standard DenseNet121, use the code in LRPDenseNet.py. For the AG-Sononet, please follow the installation instructions in https://github.com/ozan-oktay/Attention-Gated-Networks, afterwards, to create LRP heatmaps substitute the file sononet_grid_attention.py (in Attention-Gated-Networks-master/models/networks) by the version we provide, and employ the code in AGSononetLRP.py. For HAM, please visit https://github.com/oyxhust/HAM. We provide code to implement the DNN in PyTorch Lightning.
 
 ## ISNet Creation Example
 Defining a DenseNet121 based ISNet:
@@ -42,3 +42,5 @@ Bassi, Pedro RAS, Dertkigil, Sergio SJ, and Andrea Cavalli. "Towards Ignoring Ba
 
 ## Observations for the Training Procedure
 For better stability and convergence in the training procedure, we suggest employing gradient clipping (we used norm of 1) and deterministic operations, which may be selected with the following code: torch.use_deterministic_algorithms(True).
+
+A higher P hyper-parameter (heatmap loss weight) increases bias resistance, but reduces training speed. A lower d hyper-parameter (GWRP decay) also increases bias resistance, but reduces training stability. If training losses do not converge, please consider increasing the d hyper-parameter and/or reducing learning rate. 
