@@ -1,61 +1,160 @@
 import torch
 import torch.nn as nn
 import globals
+from collections import OrderedDict
+from typing import Dict, Callable
 
 Detached=True
+    
+def GlobalWeightedRankPooling(x,d=0.9):
+    x,_=torch.sort(x.view(x.shape[0],x.shape[1],x.shape[2],
+                                       x.shape[3]*x.shape[4]),
+                   dim=-1,descending=True)
+    weights=torch.tensor([d ** i for i in range(x.shape[-1])]).type_as(x)
+    weights=weights.unsqueeze(0).unsqueeze(0).unsqueeze(0)
+    x=torch.mul(x,weights)
+    x=x.sum(-1)/weights.sum()
+    return x
 
-def LRPLossActivated (heatmap, mask,eps=1e-4,E=1):
-    #function to calculate the heatmap loss.
-    #heatmap: heatmap, raw and unnormalized
-    #mask: 1 in the region of interest, 0 everywhere else
-    #E: if lower makes l term (unwanted attention loss) steeper
-    #eps: avoids infinity, should be small
-
-    heatmap=heatmap.float()
-    mask=mask.float()
+def LRPLossElementWiseCEValleysGWRP (heatmap, mask, cut=1, cut2=25, reduction='mean', 
+                                     norm=True, A=1, B=3, E=1,d=0.9,normRoI=True,var=False,
+                                     alternativeCut=False,detachNorm=False,multiMask=False,
+                                     eps=1e-10):
+    #ISNet heatmap loss.
+    #A: W1 in paper
+    #B: W2 in paper
+    #cut1 and cut2: C1 and C2 in paper
+    
+    batchSize=heatmap.shape[0]
+    classesSize=heatmap.shape[1]
+    channels=heatmap.shape[2]
+    length=heatmap.shape[-1]
+    width=heatmap.shape[-2]
+    if (not multiMask):
+        mask=mask.unsqueeze(1).repeat(1,classesSize,1,1,1)
+    Imask=torch.ones(mask.shape).type_as(mask)-mask
 
     with torch.cuda.amp.autocast(enabled=False):
-        #normalize:
-        heatmap=heatmap/torch.sqrt(torch.var(heatmap,unbiased=True)+eps)
-
+        heatmap=heatmap.float()
+        mask=mask.float()
+        Imask=Imask.float()
         #abs:
         heatmap=torch.abs(heatmap)
-
-        batchSize=heatmap.shape[0]
-        classesSize=heatmap.shape[1]
-        channels=heatmap.shape[2]
-        length=heatmap.shape[-1]
-        width=heatmap.shape[-2]
         
-        mask=mask.unsqueeze(1).repeat(1,classesSize,1,1,1)
+        #substitute nans if necessary:
+        if torch.isnan(heatmap).any():
+            print('nan 0')
+        if torch.isinf(heatmap).any():
+            print('inf 0')
+        RoIMean=torch.sum(torch.nan_to_num(heatmap,posinf=0.0,neginf=0.0)*mask)/(torch.sum(mask)+eps)
+        #print(RoIMean)
+        heatmap=torch.nan_to_num(heatmap,nan=RoIMean.item(), 
+                                 posinf=torch.max(torch.nan_to_num(heatmap,posinf=0)).item(),
+                                 neginf=torch.max(torch.nan_to_num(heatmap,posinf=0)).item())
+        
+        #save non-normalized heatmap:
+        heatmapRaw=heatmap[:]
+        
+        if torch.isnan(heatmap).any():
+            print('nan 1')
+        if torch.isinf(heatmap).any():
+            print('inf 1')
+        #normalize heatmap:
+        if norm:
+            if var:
+                denom=torch.var(heatmap, dim=(-1,-2,-3), keepdim=True)
+                denom=torch.sqrt(denom)
+            elif normRoI:
+                #roi mean value:
+                denom=torch.sum(heatmap*mask, dim=(-1,-2,-3),
+                                keepdim=True)/(torch.sum(mask,dim=(-1,-2,-3),keepdim=True)+eps)
+                if torch.isnan(denom).any():#nan in denom
+                    print('nan 0.5')
+                if torch.isinf(denom).any():
+                    print('inf 0.5')
+            else:
+                denom=torch.mean(heatmap, dim=(-1,-2,-3), keepdim=True)
+                
+            if detachNorm:
+                heatmap=heatmap/(denom.detach()+eps)
+            else:
+                heatmap=heatmap/(denom+eps)
+        else:
+            heatmap=heatmap*channels*length*width
             
-
-        #invert mask: 1 in the region without interest
-        ones=torch.ones(mask.shape).type_as(heatmap)
-        Imask=ones-mask
+        if torch.isnan(heatmap).any():
+            print('nan 2')
+        if torch.isinf(heatmap).any():
+            print('inf 2')
+            
+        #Background:
+        heatmapBKG=torch.mul(heatmap,Imask)
+        #global maxpool on spatial dimensions:
+        heatmapBKG=GlobalWeightedRankPooling(heatmapBKG,d=d)
+        #activation:
+        heatmapBKG=heatmapBKG/(heatmapBKG+E)
+        #cross entropy (pixel-wise):
+        heatmapBKG=torch.clamp(heatmapBKG,max=1-1e-7)
+        loss=-torch.log(torch.ones(heatmapBKG.shape).type_as(heatmapBKG)-heatmapBKG)
+        loss=torch.mean(loss,dim=(-1,-2))#channels and classes mean
         
-        #Zero heatmap in region of interest:
-        heatmap=torch.mul(Imask,heatmap)
-
-        #sum all image dimensions:
-        l=torch.sum(heatmap,dim=[-3,-2,-1])
- 
-        l=l/(l+E)
+        if torch.isnan(loss).any():
+            print('nan 3')
+        if torch.isinf(loss).any():#here
+            print('inf 3')
+            if (not torch.isinf(heatmapBKG).any()):
+                print('inf by log')
+            
+            
+        #avoid foreground values too low or too high:
+        heatmapF=torch.mul(heatmapRaw,mask).sum(dim=(-1,-2,-3))
+        if torch.is_tensor(cut):
+            if alternativeCut:
+                raise ValueError('Alternative cut should not be used with per class cut values')
+            target=cut.unsqueeze(0).repeat(heatmapF.shape[0],1).type_as(heatmapF)
+            target2=cut2.unsqueeze(0).repeat(heatmapF.shape[0],1).type_as(heatmapF)
+        else:
+            target=cut*torch.ones(heatmapF.shape).type_as(heatmapF)
+            target2=cut2*torch.ones(heatmapF.shape).type_as(heatmapF)
+        #print(heatmapF)
         
-        if(torch.isnan(l).any()):
-            print('NaN l after division')
-        #target: zeros
-        one=torch.ones(l.shape).type_as(heatmap)
-        #clamp to ensure no numerical floating point error:
-        l=torch.clamp(l,0,1-eps)
-        #cross-entropy:
-        l=torch.log(one-l)
-        l=(-1)*l
+        if alternativeCut:
+            #apply minimum over sum of heatmaps for all classes
+            target=cut*torch.ones(heatmapF.sum(dim=-1).shape).type_as(heatmapF)
+            lossF=nn.functional.mse_loss(torch.clamp(heatmapF.sum(dim=-1),min=None,max=target),
+                                         target, 
+                                         reduction='none')
+        else:
+            lossF=nn.functional.mse_loss(torch.clamp(heatmapF,min=None,max=target),
+                                         target, 
+                                         reduction='none')
+            lossF=torch.mean(lossF,dim=-1)
+        lossF=lossF/(cut**2)
         
         
-        loss=torch.sum(l)/(batchSize*classesSize)
-
+        lossF=lossF+torch.mean(nn.functional.mse_loss(torch.clamp(heatmapF,min=target2,max=None),
+                                                           target2, 
+                                                           reduction='none'),dim=-1)#classes mean
+        
+        loss=A*loss+B*lossF
+        if torch.isnan(loss).any():
+            print('nan 4')
+        if torch.isinf(loss).any():
+            print('inf 4')
+        
+        if (reduction=='sum'):
+            loss=torch.sum(loss)
+        elif (reduction=='mean'):
+            loss=torch.mean(loss)
+        elif (reduction=='none'):
+            pass
+        else:
+            raise ValueError('reduction should be none, mean or sum')
+        
         return loss
+    
+
+        
 
 def stabilizer(aK,e):
     #Used for LRP-e, returns terms sign(ak)*e
@@ -67,6 +166,7 @@ def stabilizer(aK,e):
     signs[signs==0]=1
     signs=signs*e
     return signs
+
 
     
 def LRPDenseReLU(layer,rK,aJ,aK,e):
@@ -86,7 +186,9 @@ def LRPDenseReLU(layer,rK,aJ,aK,e):
         
     if (Detached and layer.bias is not None):
         aK=nn.functional.linear(aJ,weights,layer.bias.detach())
+    
     aK=aK.unsqueeze(1).repeat(1,numOutputs,1)
+
         
     z=aK+stabilizer(aK=aK,e=e)
     #element-wise inversion:s
@@ -653,6 +755,65 @@ def LRPConvBNReLU(layer,BN,rK,aJ,aK,e,aKConv,Ch0=0,Ch1=None):
 
     return RJ
 
+def LRPBNConvReLU(layer,BN,rK,aJ,aK,e,Ch0=0,Ch1=None):
+    #used to propagate relevance through the sequence: Batchnorm, Convolution, ReLU
+    #layer: convolutional layer throgh which we propagate relevance
+    #e: LRP-e term. Use e=0 for LRP0
+    #rK: relevance at layer L ReLU output
+    #aJ: values at layer L BN input
+    #aK: activations after convolution
+    #BN: batch normalization layer
+    #Ch0 and Ch1: delimits the batch normalization channels that originate from the concolutional layer
+    
+    aK=aK[:,Ch0:Ch1,:,:]
+    rK=rK[:,:,Ch0:Ch1,:,:]
+    
+    #size of batch dimension (0):
+    batchSize=rK.shape[0]
+    #size of classes dimension (1):
+    numOutputs=rK.shape[1]
+    #BN parameters:
+    BNChannels=aK.shape[1]
+    
+    weights=FuseBN(layerWeights=layer.weight, BN=BN, aKConv=aJ,
+                   Ch0=Ch0,Ch1=Ch1,layerBias=layer.bias,
+                   bias=False,BNbeforeReLU=False)
+    #no detach due to small border bias inconsistency with padding
+    aK=aK.unsqueeze(1).repeat(1,numOutputs,1,1,1)
+        
+    z=aK+stabilizer(aK=aK,e=e)
+    #element-wise inversion:s
+    s=torch.div(rK,z)
+    #shape: batch,o,k
+        
+    AJ=aJ.unsqueeze(1).repeat(1,numOutputs,1,1,1)        
+        
+    s=s.view(batchSize*numOutputs,s.shape[-3],s.shape[-2],s.shape[-1])
+        
+    #transpose conv:
+    if(isinstance(layer.stride, int)):
+        if(layer.stride>1):
+            c=nn.functional.conv_transpose2d(s,weight=weights,bias=None,
+                                       stride=layer.stride,padding=layer.padding,
+                                        output_padding=(1,1))
+        else:
+            c=nn.functional.conv_transpose2d(s,weight=weights,bias=None,
+                                       stride=layer.stride,padding=layer.padding)
+    else:
+        if(layer.stride[0]>1 or layer.stride[1]>1):
+            c=nn.functional.conv_transpose2d(s,weight=weights,bias=None,
+                                       stride=layer.stride,padding=layer.padding,
+                                        output_padding=(1,1))
+        else:
+            c=nn.functional.conv_transpose2d(s,weight=weights,bias=None,
+                                       stride=layer.stride,padding=layer.padding)
+            
+    c=c.view(batchSize,numOutputs,c.shape[-3],c.shape[-2],c.shape[-1])
+        
+    RJ=torch.mul(AJ,c)
+
+    return RJ
+
 def w2RuleInput(layer,rK,aJ,aK,e):
     #used to propagate relevance through first convolutional layer using w2 rule
     #layer: convolutional layer throgh which we propagate relevance
@@ -910,9 +1071,10 @@ def LRPMaxPool2d(layer,rK,aJ,aK,e):
     s=s.reshape(numOutputs*batchSize,s.shape[-3],s.shape[-2],s.shape[-1])
     indexes=indexes.repeat(numOutputs,1,1,1)
     #unpool:
-    c=nn.functional.max_unpool2d(s,indices=indexes,kernel_size=layer.kernel_size,
-                                 stride=layer.stride,padding=layer.padding,
-                                 output_size=(s.shape[0],aJ.shape[1],aJ.shape[2],aJ.shape[3]))
+    with torch.cuda.amp.autocast(enabled=False):
+        c=nn.functional.max_unpool2d(s.float(),indices=indexes,kernel_size=layer.kernel_size,
+                                     stride=layer.stride,padding=layer.padding,
+                                     output_size=(s.shape[0],aJ.shape[1],aJ.shape[2],aJ.shape[3]))
     #reshape:   
     c=c.view(numOutputs,batchSize,c.shape[-3],c.shape[-2],c.shape[-1])
     #change to batches, classes again:
@@ -1007,9 +1169,10 @@ def MultiBlockMaxPoolBNReLU(layer,BN,rK,aJ,aK,e,aKPool,Ch0=0,Ch1=None):
     c=c.reshape(numOutputs*batchSize,c.shape[-3],c.shape[-2],c.shape[-1])
     indexes=indexes.repeat(numOutputs,1,1,1)
     #unpool:
-    c=nn.functional.max_unpool2d(c,indices=indexes,kernel_size=layer.kernel_size,
-                                 stride=layer.stride,padding=layer.padding,
-                                 output_size=(c.shape[0],aJ.shape[1],aJ.shape[2],aJ.shape[3]))
+    with torch.cuda.amp.autocast(enabled=False):
+        c=nn.functional.max_unpool2d(c.float(),indices=indexes,kernel_size=layer.kernel_size,
+                                     stride=layer.stride,padding=layer.padding,
+                                     output_size=(c.shape[0],aJ.shape[1],aJ.shape[2],aJ.shape[3]))
     #reshape:   
     c=c.view(numOutputs,batchSize,c.shape[-3],c.shape[-2],c.shape[-1])
     #change to batches, classes again:
@@ -1095,3 +1258,15 @@ def resetGlobals():
     globals.mean_l=0
     globals.mean_L=0
     globals.Ml=0
+    
+def remove_all_forward_hooks(model: torch.nn.Module) -> None:
+    for name, child in model._modules.items():
+        if child is not None:
+            if hasattr(child, "_forward_hooks"):
+                child._forward_hooks: Dict[int, Callable] = OrderedDict()
+            remove_all_forward_hooks(child)
+            
+def RemoveLRPBlock(ISNet):
+    model=ISNet.DenseNet
+    remove_all_forward_hooks(model)
+    return model

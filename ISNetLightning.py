@@ -11,13 +11,16 @@ import torch.multiprocessing
 torch.multiprocessing.set_sharing_strategy('file_system')
 
 class IsDense121Lightning(pl.LightningModule):
-    def __init__(self,multiLabel,
+    def __init__(self,multiLabel,multiMask,
                  classes,
                  e=10e-2,heat=True,
                  Zb=True,pretrained=False,
                  LR=1e-3,P=0.7,E=10,saveMaps=False,
-                 mapsLocation='',optim='Adam',
-                 Cweight=None):
+                 mapsLocation='',optim='SGD',
+                 Cweight=None,A=1,B=3,d=0.9,
+                 Ea=1, normRoI=True,norm=True,
+                 cut=1,cut2=25,alternativeCut=False,detachNorm=False,var=False,
+                 eps=1e-10):
         #Creates ISNet based on DenseNet121, non instantiated
         
         #model parameters:
@@ -32,6 +35,7 @@ class IsDense121Lightning(pl.LightningModule):
         #LR:learning rate
         #P: loss balancing hyperparameter
         #E: heatmap loss hyperparameter
+        #multiMask: for a segmentation mask per class
         #multiLabel: for multi-label problems
         #saveMaps: saves test hetamaps
         #optim: SGD or Adam
@@ -51,11 +55,24 @@ class IsDense121Lightning(pl.LightningModule):
         self.lr=LR
         self.P=P
         self.E=E
+        self.multiMask=multiMask
         self.multiLabel=multiLabel
         self.saveMaps=saveMaps
         self.mapsLocation=mapsLocation
         self.optim=optim
         self.criterion=nn.CrossEntropyLoss()
+        self.norm=norm
+        self.cut=cut
+        self.cut2=cut2
+        self.A=A
+        self.B=B
+        self.d=d
+        self.Ea=Ea
+        self.normRoI=normRoI
+        self.alternativeCut=alternativeCut
+        self.detachNorm=detachNorm
+        self.var=var
+        self.eps=eps
         if (Cweight is not None):
             self.Cweight=nn.parameter.Parameter(data=Cweight, requires_grad=False)
         else:
@@ -98,8 +115,17 @@ class IsDense121Lightning(pl.LightningModule):
             classifierLoss=self.criterion(outputs,labels.squeeze(1))
         
         if (self.heat):
-            heatmapLoss=ISNetFunctions.LRPLossActivated(heatmaps,masks,
-                                                        E=self.E)
+            heatmapLoss=ISNetFunctions.LRPLossElementWiseCEValleysGWRP(heatmaps,masks,
+                                                                       norm=self.norm,
+                                                                       cut=self.cut,cut2=self.cut2,
+                                                                       A=self.A,B=self.B,d=self.d,
+                                                                       E=self.Ea,
+                                                                       normRoI=self.normRoI,
+                                                                       var=self.var,
+                                                               alternativeCut=self.alternativeCut,
+                                                                      detachNorm=self.detachNorm,
+                                                                      multiMask=self.multiMask,
+                                                                      eps=self.eps)
             return classifierLoss,heatmapLoss
         else:
             return classifierLoss
@@ -113,6 +139,10 @@ class IsDense121Lightning(pl.LightningModule):
             cLoss,hLoss=self.compound_loss(logits,labels=labels,
                                       heatmaps=heatmaps,masks=masks)
             loss=(1-self.P)*cLoss+self.P*hLoss
+            
+            if (torch.isnan(loss).any()):
+                raise ValueError ('NaN training loss, aborting')
+            
             self.log('train_loss', {'Classifier':cLoss,
                                     'Heatmap':hLoss,
                                     'Sum':loss},                     
@@ -155,9 +185,8 @@ class IsDense121Lightning(pl.LightningModule):
 
     def validation_epoch_end(self, validation_step_outputs):
         loss=validation_step_outputs[0]['loss'].unsqueeze(0)
-        for i,out in enumerate(validation_step_outputs,0):
-            if(i!=0):
-                loss=torch.cat((loss,out['loss'].unsqueeze(0)),dim=0)
+        for out in validation_step_outputs:
+            loss=torch.cat((loss,out['loss'].unsqueeze(0)),dim=0)
 
         self.log('val_loss',torch.mean(loss,dim=0),
                  on_epoch=True,sync_dist=True)
@@ -203,12 +232,13 @@ class IsDense121Lightning(pl.LightningModule):
             heatmaps=test_step_outputs[0]['heatmaps']
             
         for i,out in enumerate(test_step_outputs,0):
-            if (i!=0):
-                pred=torch.cat((pred,out['pred']),dim=0)
-                labels=torch.cat((labels,out['labels']),dim=0)
-                if (self.heat):
-                    images=torch.cat((images,out['images']),dim=0)
-                    heatmaps=torch.cat((heatmaps,out['heatmaps']),dim=0)
+            if i==0:
+                continue
+            pred=torch.cat((pred,out['pred']),dim=0)
+            labels=torch.cat((labels,out['labels']),dim=0)
+            if (self.heat):
+                images=torch.cat((images,out['images']),dim=0)
+                heatmaps=torch.cat((heatmaps,out['heatmaps']),dim=0)
                 
         if (self.heat):
             self.TestResults=pred,labels,images,heatmaps
