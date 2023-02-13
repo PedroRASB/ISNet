@@ -15,7 +15,7 @@ class IsDense121Lightning(pl.LightningModule):
                  classes,
                  e=1e-2,heat=True,
                  Zb=True,pretrained=False,
-                 LR=1e-3,P=0.7,E=10,saveMaps=False,
+                 LR=1e-3,P=0.7,saveMaps=False,
                  mapsLocation='',optim='SGD',
                  Cweight=None,A=1,B=3,d=0.9,
                  Ea=1, normRoI=True,norm=True,
@@ -34,7 +34,7 @@ class IsDense121Lightning(pl.LightningModule):
         #training parameters:
         #LR:learning rate
         #P: loss balancing hyperparameter
-        #E: heatmap loss hyperparameter
+        #A,B,d,Ea: heatmap loss hyperparameters
         #multiMask: for a segmentation mask per class
         #multiLabel: for multi-label problems
         #saveMaps: saves test hetamaps
@@ -54,7 +54,6 @@ class IsDense121Lightning(pl.LightningModule):
         self.heat=heat
         self.lr=LR
         self.P=P
-        self.E=E
         self.multiMask=multiMask
         self.multiLabel=multiLabel
         self.saveMaps=saveMaps
