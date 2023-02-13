@@ -13,7 +13,7 @@ torch.multiprocessing.set_sharing_strategy('file_system')
 class IsDense121Lightning(pl.LightningModule):
     def __init__(self,multiLabel,multiMask,
                  classes,
-                 e=10e-2,heat=True,
+                 e=1e-2,heat=True,
                  Zb=True,pretrained=False,
                  LR=1e-3,P=0.7,E=10,saveMaps=False,
                  mapsLocation='',optim='SGD',
