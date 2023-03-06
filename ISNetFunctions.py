@@ -836,7 +836,7 @@ def w2RuleInput(layer,rK,aJ,aK,e):
     B2=torch.pow(bias,2)
     AK=nn.functional.conv2d(torch.ones(aJ.shape).type_as(rK),weight=W2,
                             bias=B2,stride=layer.stride,padding=layer.padding)
-    z=aK+stabilizer(aK=aK,e=e)
+    z=AK+stabilizer(aK=AK,e=e)
     z=z.unsqueeze(1).repeat(1,numOutputs,1,1,1)
     #element-wise inversion:s
     s=torch.div(rK,z)
@@ -878,7 +878,7 @@ def w2BNRuleInput(layer,BN,rK,aJ,aK,e,aKConv):
     B2=torch.pow(biases,2)
     AK=nn.functional.conv2d(torch.ones(aJ.shape).type_as(rK),weight=W2,
                             bias=B2,stride=layer.stride,padding=layer.padding)
-    z=aK+stabilizer(aK=aK,e=e)
+    z=AK+stabilizer(aK=AK,e=e)
     z=z.unsqueeze(1).repeat(1,numOutputs,1,1,1)
     #element-wise inversion:s
     s=torch.div(rK,z)
