@@ -329,8 +329,9 @@ def LRPPool2d(layer,rK,aJ,aK,e,adaptative=False):
     channels=rK.shape[2]
     
     if(adaptative):
-        kernel_size=(int(aJ.shape[-2]/layer.output_size[0]),int(aJ.shape[-1]/layer.output_size[1]))
-        stride=kernel_size
+        stride=(int(aJ.shape[-2]/layer.output_size[0]),int(aJ.shape[-1]/layer.output_size[1]))
+        kernel_size=(aJ.shape[-2]-(layer.output_size[0]-1)*stride[0],
+                     aJ.shape[-1]-(layer.output_size[1]-1)*stride[1])
         padding=0
     else:
         kernel_size=layer.kernel_size
