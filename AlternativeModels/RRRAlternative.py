@@ -328,6 +328,7 @@ class RRRLgt(pl.LightningModule):
 
         
 def RRRHeatmapLoss(grad,mask):
+    #mask is 1 at foreground and 0 at background
     Imask=1-mask
     x=torch.mul(grad,Imask)
     x=x**2
