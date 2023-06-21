@@ -1,9 +1,9 @@
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
-import ISNetLayersZe as ISNetLayers
-import ISNetFunctionsZe as ISNetFunctions
-import LRPDenseNetZe as LRPDenseNet
+import ISNetLayers
+import ISNetFunctions
+import LRPDenseNet
 import globalsZe as globals
 import pytorch_lightning as pl
 import warnings
