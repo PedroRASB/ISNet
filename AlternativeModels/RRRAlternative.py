@@ -1,14 +1,20 @@
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
-import ISNetFunctions
-import LRPDenseNet
+import ISNetLayersZe as ISNetLayers
+import ISNetFunctionsZe as ISNetFunctions
+import LRPDenseNetZe as LRPDenseNet
+import globalsZe as globals
 import pytorch_lightning as pl
 import warnings
 from collections import OrderedDict
 import numpy as np
 from torch.autograd import Variable
 import torch.autograd as ag
+import torchvision
+
+import sys
+sys.path.append('../')
 
 import torch.multiprocessing
 torch.multiprocessing.set_sharing_strategy('file_system')
@@ -19,13 +25,41 @@ class RRRLgt(pl.LightningModule):
                  classes=1000,architecture='densenet121',
                  heat=True,
                  pretrained=False,
-                 LR=1e-3,P=0.5,optim='SGD',
+                 LR=1e-3,P=0.5,
+                 cut=1,
+                 saveMaps=False,
+                 mapsLocation='',optim='SGD',
                  Cweight=None,
                  dropLr=None, baseModel=None,
                  dropout=False,
                  momentum=0.99,WD=0,
-                 clip=1):
-
+                 clip=1,VGGRemoveLastMaxpool=False):
+        #Creates ISNet based on DenseNet121, non instantiated
+        
+        #model parameters:
+        #heat: allows relevance propagation and heatmap creation. If False,
+        #no signal is propagated through LRP block.
+        #pretrained: if a pretrained DenseNet121 shall be downloaded
+        #classes: number of output classes
+        #architecture: densenet,resnet
+        #if not None: standard resnet or densenet to be converted
+        #dropout:adds dropout before last layer
+        
+        
+        #training parameters:
+        #LR:learning rate, list of tuples (epoch,lr) for scheduler
+        #P: loss balancing hyperparameter. int or dictionbary, with epochs (int) and P (float)
+        #E: heatmap loss hyperparameter
+        #multiMask: for a segmentation mask per class
+        #multiLabel: for multi-label problems
+        #saveMaps: saves test hetamaps
+        #optim: SGD or Adam
+        #Cweight: BCE loss weights to deal with unbalanced datasets
+        #validation loader should return dataset identifier (0=iid,1=ood) with each label
+        #dropLr: if not None, list of tuples (epoch,lr) for scheduler
+        #meanMaps: standard value for heatmap sums
+        #separate: separatelly minimizes positive and negative relevance
+        
         super (RRRLgt,self).__init__()
         self.save_hyperparameters()
         self.automatic_optimization=False
@@ -73,8 +107,49 @@ class RRRLgt(pl.LightningModule):
                     raise ValueError('No available pretrained wideResnet28')
                 import WideResNet
                 self.classifierDNN=WideResNet.WideResNet28(num_classes=classes)
+            elif (architecture=='vgg11'):
+                self.classifierDNN=torchvision.models.vgg11(pretrained=pretrained,
+                                                            num_classes=classes)
+                if VGGRemoveLastMaxpool:
+                    self.classifierDNN.features[-1]=torch.nn.Identity()
+            elif (architecture=='vgg11_bn'):
+                self.classifierDNN=torchvision.models.vgg11_bn(pretrained=pretrained,
+                                                               num_classes=classes)    
+                if VGGRemoveLastMaxpool:
+                    self.classifierDNN.features[-1]=torch.nn.Identity()
+            elif (architecture=='vgg16'):
+                self.classifierDNN=torchvision.models.vgg16(pretrained=pretrained,
+                                                            num_classes=classes) 
+                if VGGRemoveLastMaxpool:
+                    self.classifierDNN.features[30]=torch.nn.Identity()
+            elif (architecture=='vgg16_bn'):
+                self.classifierDNN=torchvision.models.vgg16_bn(pretrained=pretrained,
+                                                               num_classes=classes) 
+                if VGGRemoveLastMaxpool:
+                    self.classifierDNN.features[-1]=torch.nn.Identity()
+            elif (architecture=='vgg13'):
+                self.classifierDNN=torchvision.models.vgg13(pretrained=pretrained,
+                                                            num_classes=classes) 
+                if VGGRemoveLastMaxpool:
+                    self.classifierDNN.features[-1]=torch.nn.Identity()
+            elif (architecture=='vgg13_bn'):
+                self.classifierDNN=torchvision.models.vgg13_bn(pretrained=pretrained,
+                                                               num_classes=classes) 
+                if VGGRemoveLastMaxpool:
+                    self.classifierDNN.features[-1]=torch.nn.Identity()
+            elif (architecture=='vgg19'):
+                self.classifierDNN=torchvision.models.vgg19(pretrained=pretrained,
+                                                            num_classes=classes) 
+                if VGGRemoveLastMaxpool:
+                    self.classifierDNN.features[-1]=torch.nn.Identity()
+                    
+            elif (architecture=='vgg19_bn'):
+                self.classifierDNN=torchvision.models.vgg19_bn(pretrained=pretrained,
+                                                               num_classes=classes) 
+                if VGGRemoveLastMaxpool:
+                    self.classifierDNN.features[-1]=torch.nn.Identity()
             else:
-                raise ValueError('Architecture must be densenet121, 161, 169, 201 or 204; or resnet18, 34, 50, 101 or 152; or  wideResnet28. User may also supply a DenseNet or ResNet as baseModel.')
+                raise ValueError('Architecture must be densenet121, 161, 169, 201 or 204; or resnet18, 34, 50, 101 or 152; or  wideResnet28; orr vgg 11, 13, 16, 19. User may also supply a DenseNet or ResNet as baseModel.')
         
         else:
             self.classifierDNN=baseModel
@@ -87,7 +162,7 @@ class RRRLgt(pl.LightningModule):
                 self.classifierDNN.fc=nn.Sequential(nn.Dropout(p=0.5, inplace=False),
                                                        self.classifierDNN.fc)
             else:
-                raise ValueError('Unrecognized backbone')
+                raise ValueError('Unrecognized backbone or vgg should have dropout false')
 
         ISNetFunctions.ChangeInplace(self.classifierDNN)
             
@@ -96,9 +171,13 @@ class RRRLgt(pl.LightningModule):
         self.P=P
         self.multiMask=multiMask
         self.multiLabel=multiLabel
+        self.cut=cut
+        self.Cweight=Cweight
         self.criterion=nn.CrossEntropyLoss()
         self.clip=clip
         
+        self.saveMaps=saveMaps
+        self.mapsLocation=mapsLocation
         self.optim=optim
         self.classes=classes
         self.dropLr=dropLr
@@ -179,7 +258,7 @@ class RRRLgt(pl.LightningModule):
                     self.P=self.increaseP[epoch]
 
         #data format: channel first
-        if (self.heat):
+        if (self.heat):#ISNet
             inputs,masks,labels=train_batch
             inputs=Variable(inputs, requires_grad=True)
             logits=self.forward(inputs)
@@ -222,7 +301,7 @@ class RRRLgt(pl.LightningModule):
         else:
             inputs,labels=val_batch
         
-        if (self.heat):
+        if (self.heat):#ISNet
             inputs=Variable(inputs, requires_grad=True)
             logits=self.forward(inputs)
             cLoss,hLoss=self.compound_loss(logits,labels=labels,
@@ -326,9 +405,17 @@ class RRRLgt(pl.LightningModule):
         return model
     
 
+
+class GradHook():
+    def __init__(self, module):
+        self.hook = module.register_backward_hook(self.hook_fn)
+    def hook_fn(self, module, grad_in, grad_out):
+        self.output = grad_out[0].clone()
+    def close(self):
+        self.hook.remove()
+
         
 def RRRHeatmapLoss(grad,mask):
-    #mask is 1 at foreground and 0 at background
     Imask=1-mask
     x=torch.mul(grad,Imask)
     x=x**2
