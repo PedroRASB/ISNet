@@ -28,31 +28,7 @@ class RRRLgt(pl.LightningModule):
                  dropout=False,
                  momentum=0.99,WD=0,
                  clip=1):
-        
-        #model parameters:
-        #heat: allows relevance propagation and heatmap creation. If False,
-        #no signal is propagated through LRP block.
-        #pretrained: if a pretrained DenseNet121 shall be downloaded
-        #classes: number of output classes
-        #architecture: densenet,resnet
-        #if not None: standard resnet or densenet to be converted
-        #dropout:adds dropout before last layer
-        
-        
-        #training parameters:
-        #LR:learning rate, list of tuples (epoch,lr) for scheduler
-        #P: loss balancing hyperparameter. int or dictionbary, with epochs (int) and P (float)
-        #E: heatmap loss hyperparameter
-        #multiMask: for a segmentation mask per class
-        #multiLabel: for multi-label problems
-        #saveMaps: saves test hetamaps
-        #optim: SGD or Adam
-        #Cweight: BCE loss weights to deal with unbalanced datasets
-        #validation loader should return dataset identifier (0=iid,1=ood) with each label
-        #dropLr: if not None, list of tuples (epoch,lr) for scheduler
-        #meanMaps: standard value for heatmap sums
-        #separate: separatelly minimizes positive and negative relevance
-        
+
         super (RRRLgt,self).__init__()
         self.save_hyperparameters()
         self.automatic_optimization=False
