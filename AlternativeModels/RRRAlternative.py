@@ -1,10 +1,8 @@
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
-import ISNetLayers
 import ISNetFunctions
 import LRPDenseNet
-import globalsZe as globals
 import pytorch_lightning as pl
 import warnings
 from collections import OrderedDict
