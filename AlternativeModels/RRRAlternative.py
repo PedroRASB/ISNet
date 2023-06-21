@@ -19,10 +19,7 @@ class RRRLgt(pl.LightningModule):
                  classes=1000,architecture='densenet121',
                  heat=True,
                  pretrained=False,
-                 LR=1e-3,P=0.5,
-                 cut=1,
-                 saveMaps=False,
-                 mapsLocation='',optim='SGD',
+                 LR=1e-3,P=0.5,optim='SGD',
                  Cweight=None,
                  dropLr=None, baseModel=None,
                  dropout=False,
@@ -99,14 +96,9 @@ class RRRLgt(pl.LightningModule):
         self.P=P
         self.multiMask=multiMask
         self.multiLabel=multiLabel
-        self.cut=cut
-        print('RECEIVED CUT OF:',self.cut)
-        self.Cweight=Cweight
         self.criterion=nn.CrossEntropyLoss()
         self.clip=clip
         
-        self.saveMaps=saveMaps
-        self.mapsLocation=mapsLocation
         self.optim=optim
         self.classes=classes
         self.dropLr=dropLr
