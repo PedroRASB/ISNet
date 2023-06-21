@@ -372,14 +372,6 @@ class RRRLgt(pl.LightningModule):
     
 
 
-class GradHook():
-    def __init__(self, module):
-        self.hook = module.register_backward_hook(self.hook_fn)
-    def hook_fn(self, module, grad_in, grad_out):
-        self.output = grad_out[0].clone()
-    def close(self):
-        self.hook.remove()
-
         
 def RRRHeatmapLoss(grad,mask):
     Imask=1-mask
