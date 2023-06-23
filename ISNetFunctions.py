@@ -1271,3 +1271,43 @@ def RemoveLRPBlock(ISNet):
     model=ISNet.DenseNet
     remove_all_forward_hooks(model)
     return model
+
+def InsertIO(m: torch.nn.Module):
+    #Function to insert multiple forward hooks in the classifier, for later use in the LRP block
+    #m: classifier
+    
+    children = dict(m.named_children())
+    output = {}
+    if children == {}:
+        #m.register_forward_hook(AppendBoth)
+        #l=globals.LayerIndex
+        #globals.LayerIndex=globals.LayerIndex+1
+        #return (m,l)
+        return (m,Hook(m))
+    else:
+        for name, child in children.items():
+            try:
+                output[name] = InsertIO(child)
+            except TypeError:
+                output[name] = InsertIO(child)
+    return output
+
+class Hook():
+    def __init__(self, module, backward=False):
+        if backward==False:
+            self.hook = module.register_forward_hook(self.hook_fn)
+        else:
+            self.hook = module.register_backward_hook(self.hook_fn)
+    def hook_fn(self, module, input, output):
+        try:
+            self.input = input[0].clone()
+        except:
+            #maxpool
+            self.input = (input[0][0].clone(),input[0][1].clone())
+        try:
+            self.output = output.clone()
+        except:
+            #maxpool
+            self.output = (output[0].clone(),output[1].clone())
+    def close(self):
+        self.hook.remove()

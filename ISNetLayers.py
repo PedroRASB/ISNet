@@ -3,6 +3,8 @@ import torch.nn as nn
 import ISNetFunctions as f
 import LRPDenseNet
 import globals
+from collections import OrderedDict
+import re
 
 #Transform function in ISNetFunctions in DNN layers:
 
@@ -563,3 +565,259 @@ class IsDense(nn.Module):
             globals.X=[]
             globals.XI=[]
             return y
+
+        
+        
+        
+        
+        
+        
+#functions for standard PyTorch sequential blocks and simple sequences of layers
+
+class _LRPSequential (nn.ModuleDict):
+    def __init__(self,network,e,Zb,
+                 inputShape=None,
+                 preFlattenShape=None,classifierPresent=True):
+        
+        super(_LRPSequential ,self).__init__()
+        if(not torch.backends.cudnn.deterministic):
+            raise ValueError('Please set torch.backends.cudnn.deterministic=True')
+        
+        self.classifierPresent=classifierPresent
+        
+        for i,layer in enumerate(network,0):
+            name=layer.__class__.__name__
+            if name=='MaxPool2d':
+                network[i].return_indices=True
+                network[i]=nn.Sequential(OrderedDict([('maxpool',network[i]),
+                                                      ('special',IgnoreIndexes())]))
+        
+        #register hooks:
+        self.model=f.InsertIO(network)
+        
+        if classifierPresent:
+            #last layer:
+            classifier=self.model[list(self.model.keys())[-1]][0]
+           
+            self.add_module('LRPOut',
+                            LRPOutput())
+            #initialize LRP layer for classifier:
+            self.add_module('LRPOutDense',
+                            LRPDenseReLU(classifier,e))
+        
+        chain=[]
+        indices=[]
+        for layer in reversed(list(self.model.keys())):
+            if classifierPresent and layer==list(self.model.keys())[-1]:#classifier
+                continue
+                
+            try:
+                name=self.model[layer][0].__class__.__name__
+            except:
+                name='MaxPool'
+                
+            if (name=='Dropout' or name=='Identity'):
+                continue
+                
+            chain.append(name)
+            indices.append(layer)
+            
+            if chain==['MaxPool']:
+                self.add_module('LRPMaxPool'+indices[-1],
+                                LRPMaxPool(self.model[indices[0]]['maxpool'][0],e))
+                chain=[]
+                indices=[]
+            elif chain==['AvgPool2d']:
+                self.add_module('LRPAvgPool'+indices[-1],
+                                LRPPool2d(self.model[indices[0]][0],e))
+                chain=[]
+                indices=[]
+            elif chain==['AvgPool2d']:
+                self.add_module('LRPAdpAvgPool'+indices[-1],
+                                LRPAdaptativePool2d(self.model[indices[0]][0],e))
+                chain=[]
+                indices=[]
+            elif chain==['Flatten']:
+                if indices==['0']:
+                    size=inputShape
+                else:
+                    size=preFlattenShape
+                self.add_module('Unflatten'+indices[-1],
+                                torch.nn.Unflatten(dim=-1, unflattened_size=size))
+                chain=[]
+                indices=[]
+            
+            elif ((indices[-1]=='0' or indices[-1]=='1') and Zb):
+                if list(reversed(chain))==['Linear','ReLU']:
+                    self.add_module('LRPZbDense'+indices[-1],
+                                    ZbRuleDenseInput(self.model[indices[-1]][0],e,l=0,h=1))
+                    chain=[]
+                    indices=[] 
+                elif list(reversed(chain))==['Conv2d','ReLU']:
+                    self.add_module('LRPZbConv'+indices[-1],
+                                    ZbRuleConvInput(self.model[indices[-1]][0],e,l=0,h=1))
+                    chain=[]
+                    indices=[] 
+                    
+                elif list(reversed(chain))==['Conv2d','BatchNorm2d','ReLU']:
+                    self.add_module('LRPZbConvBN'+indices[-1],
+                                    ZbRuleConvBNInput(self.model[indices[-1]][0],
+                                                      self.model[indices[-2]][0],
+                                                      e,l=0,h=1))
+                    chain=[]
+                    indices=[] 
+                
+                
+            elif list(reversed(chain))==['Linear','ReLU']:
+                self.add_module('LRPDense'+indices[-1],
+                                LRPDenseReLU(self.model[indices[-1]][0],e))
+                chain=[]
+                indices=[]
+                
+            elif list(reversed(chain))==['Conv2d','ReLU']:
+                self.add_module('LRPConv'+indices[-1],
+                                LRPConvReLU(self.model[indices[-1]][0],e))
+                chain=[]
+                indices=[]
+                
+            elif list(reversed(chain))==['Conv2d','BatchNorm2d','ReLU']:
+                self.add_module('LRPConvBN'+indices[-1],
+                                LRPConvBNReLU(self.model[indices[-1]][0],
+                                              self.model[indices[-2]][0],
+                                              e))
+                chain=[]
+                indices=[]
+                
+        if len(chain)>0:
+            raise ValueError('Unrecognized sequence:',list(reversed(chain)))
+
+                    
+    def forward(self,x,y,R=None):
+        B=y.shape[0]#batch size
+        C=y.shape[-1]
+            
+        if self.classifierPresent:
+            R=self.LRPOut(y=y)
+            R=self.LRPOutDense(rK=R,aJ=self.model[list(self.model.keys())[-1]][1].input,aK=y)
+
+        for name,layer in self.items():
+            if 'Unflatten' in name:
+                R=layer(R)
+            if 'LRPMaxPool' in name:
+                R=layer(rK=R,
+                         aJ=self.model[str(re.findall(r'\d+',name)[-1])]['maxpool'][1].input, 
+                         aK=self.model[str(re.findall(r'\d+',name)[-1])]['maxpool'][1].output)
+            if ('LRP' in name and 'Out' not in name and 'MaxPool' not in name\
+               and 'BN' not in name):
+                R=layer(rK=R,
+                         aJ=self.model[str(re.findall(r'\d+',name)[-1])][1].input, 
+                         aK=self.model[str(re.findall(r'\d+',name)[-1])][1].output)
+            elif 'BN'in name:
+                R=layer(rK=R,
+                         aJ=self.model[str(re.findall(r'\d+',name)[-1])][1].input,
+                         aKConv=self.model[str(re.findall(r'\d+',name)[-1])][1].output,
+                         aK=self.model[str(int(re.findall(r'\d+',name)[-1])+1)][1].output)
+        return R
+                    
+class LRPSequential (nn.Module):
+    def __init__(self,network,heat,e,Zb, 
+                 inputShape=None,preFlattenShape=None):
+        super(LRPSequential ,self).__init__()
+        
+        #remove inplace
+        f.ChangeInplace(network)
+        
+        self.NN=network
+        self.LRPBlock=_LRPSequential(self.NN,e,Zb,
+                                     inputShape=inputShape,preFlattenShape=preFlattenShape)
+        
+        self.heat=heat
+        
+    def forward(self,x):
+        y=self.NN(x)
+        
+        if not self.heat:
+            return y
+        
+        R=self.LRPBlock(x,y)
+        return y,R
+            
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+# Functions for ISNets with VGG backbones        
+        
+class _LRPVGG (nn.Module):
+    def __init__(self,network,e,Zb,inputShape=None,
+                 preFlattenShape=None):
+        #LRP block for VGG network
+        super(_LRPVGG ,self).__init__()
+        
+        
+        self.LRPClassifier=_LRPSequential(network.classifier,e,Zb=False,
+                                     inputShape=inputShape,preFlattenShape=preFlattenShape,
+                                       classifierPresent=True)
+        self.Pool=f.InsertIO(network.avgpool)
+        self.LRPPool=LRPAdaptativePool2d(self.Pool[0],e)
+        self.LRPFeatures=_LRPSequential(network.features,e,Zb,
+                                     inputShape=inputShape,preFlattenShape=preFlattenShape,
+                                       classifierPresent=False)
+        
+    def forward(self,x,y):
+        R=self.LRPClassifier(x,y)
+        
+        B=y.shape[0]
+        C=y.shape[-1]
+        
+        R=R.view(B,C,self.Pool[1].output.shape[-3],self.Pool[1].output.shape[-2],
+                 self.Pool[1].output.shape[-1])
+        
+        
+        R=self.LRPPool(R,
+                       aJ=self.Pool[1].input,
+                       aK=self.Pool[1].output)
+        
+        R=self.LRPFeatures(x,y,R=R)
+        
+        return R
+    
+class LRPVGG (nn.Module):
+    def __init__(self,network,heat,e,Zb, 
+                 inputShape=None,preFlattenShape=None):
+        #VGG-based ISNet, network must be torchvision.models.vgg...
+        super(LRPVGG ,self).__init__()
+        
+        #remove inplace
+        f.ChangeInplace(network) #no need, using .clone() in hooks
+        
+        self.NN=network
+        self.LRPBlock=_LRPVGG(self.NN,e,Zb,
+                             inputShape=inputShape,preFlattenShape=preFlattenShape)
+        
+        self.heat=heat
+        
+    def forward(self,x):
+        y=self.NN(x)
+        
+        if not self.heat:
+            return y
+        
+        R=self.LRPBlock(x,y)
+        return y,R
+    
+class IgnoreIndexes(nn.Module):   
+    #special layer to ignore indexes of previous max pooling layer
+    def __init__(self):
+        super(IgnoreIndexes, self).__init__()
+    def forward(self, x):
+        return(x[0])
