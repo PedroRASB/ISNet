@@ -132,9 +132,9 @@ def LRPLossCEValleysGWRP (heatmap, mask, cut=1, cut2=25, reduction='mean',
         lossF=lossF/(cut**2)
         
         
-        lossF=lossF+torch.mean(nn.functional.mse_loss(torch.clamp(heatmapF,min=target2,max=None),
+        lossF=lossF+(torch.mean(nn.functional.mse_loss(torch.clamp(heatmapF,min=target2,max=None),
                                                            target2, 
-                                                           reduction='none'),dim=-1)#classes mean
+                                                           reduction='none'),dim=-1)/(cut**2))#classes mean
         
         loss=A*loss+B*lossF
         if torch.isnan(loss).any():
