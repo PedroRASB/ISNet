@@ -1,4 +1,4 @@
-Official code for paper "Towards Ignoring Backgrounds and Improving Generalization: a Costless DNN Visual Attention Mechanism" (https://arxiv.org/abs/2202.00232).
+Official code for paper "Towards Ignoring Backgrounds and Improving Generalization: a Costless DNN Visual Attention Mechanism" (https://arxiv.org/abs/2202.00232), based on PyTorch (originally implemented with PyTorch version 1.11.0).
 
 Abstract:
 This work introduces an attention mechanism for image classifiers and the corresponding deep neural network (DNN)
