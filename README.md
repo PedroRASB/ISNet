@@ -1,20 +1,8 @@
-Official code for paper "Towards Ignoring Backgrounds and Improving Generalization: a Costless DNN Visual Attention Mechanism" (https://arxiv.org/abs/2202.00232), based on PyTorch (originally implemented with PyTorch version 1.11.0).
+Official code for paper "Improving deep neural network generalization and robustness to background bias via layer-wise relevance propagation optimization" (https://doi.org/10.1038/s41467-023-44371-z, https://www.nature.com/articles/s41467-023-44371-z), based on PyTorch (originally implemented with PyTorch version 1.11.0).
 
 Abstract:
-This work introduces an attention mechanism for image classifiers and the corresponding deep neural network (DNN)
-architecture, dubbed ISNet. During training, the ISNet uses segmentation targets to learn how to find the image’s region of
-interest and concentrate its attention on it. The proposal is based on a novel concept, background relevance minimization
-in LRP explanation heatmaps. It can be applied to virtually any classification neural network architecture, without any extra
-computational cost at run-time. Capable of ignoring the background, the resulting single DNN can substitute the common
-pipeline of a segmenter followed by a classifier, being faster and lighter. We tested the ISNet with three applications: COVID-19
-and tuberculosis detection in chest X-rays, and facial attribute estimation. The first two tasks employed mixed training databases,
-which fostered background bias and shortcut learning. By focusing on lungs, the ISNet reduced shortcut learning, improving
-generalization to external (out-of-distribution) test datasets. When training data presented background bias, the ISNet’s
-test performance significantly surpassed standard classifiers, multi-task DNNs (performing classification and segmentation),
-attention-gated neural networks, Guided Attention Inference Networks, and the standard segmentation-classification pipeline.
-Facial attribute estimation demonstrated that ISNet could precisely focus on faces, being also applicable to natural images.
-ISNet presents an accurate, fast, and light methodology to ignore backgrounds and improve generalization, especially when
-background bias is a concern.
+
+Features in images’ backgrounds can spuriously correlate with the images’ classes, representing background bias. They can influence the classifier’s decisions, causing shortcut learning (Clever Hans effect). The phenomenon generates deep neural networks (DNNs) that perform well on standard evaluation datasets but generalize poorly to real-world data. Layer-wise Relevance Propagation (LRP) explains DNNs’ decisions. Here, we show that the optimization of LRP heatmaps can minimize the background bias influence on deep classifiers, hindering shortcut learning. By not increasing run-time computational cost, the approach is light and fast. Furthermore, it applies to virtually any classification architecture. After injecting synthetic bias in images’ backgrounds, we compared our approach (dubbed ISNet) to eight state-of-the-art DNNs, quantitatively demonstrating its superior robustness to background bias. Mixed datasets are common for COVID-19 and tuberculosis classification with chest X-rays, fostering background bias. By focusing on the lungs, the ISNet reduced shortcut learning. Thus, its generalization performance on external (out-of-distribution) test databases significantly surpassed all implemented benchmark models.
 
 ## Content
 LRPDenseNet.py: code to create a DenseNet, based on the original TorchVision model, but  without in-place ReLU, and with an extra ReLU in transition layers.
@@ -38,7 +26,7 @@ DenseNet=LRPDenseNet.densenet121(pretrained=False)
 net=ISNetLayers.IsDense(DenseNet,heat=True,e=1e-2, Zb=True)
 
 ## Citation
-Bassi, Pedro RAS, Dertkigil, Sergio SJ, and Andrea Cavalli. "Towards Ignoring Backgrounds and Improving Generalization: a Costless DNN Visual Attention Mechanism." ArXiv preprint. ArXiv:2202.00232 (2022).
+Bassi, P.R.A.S., Dertkigil, S.S.J. & Cavalli, A. Improving deep neural network generalization and robustness to background bias via layer-wise relevance propagation optimization. Nat Commun 15, 291 (2024). https://doi.org/10.1038/s41467-023-44371-z
 
 ## Observations for the Training Procedure
 For better stability and convergence in the training procedure, we suggest employing gradient clipping (we used norm of 1) and deterministic operations, which may be selected with the following code: torch.use_deterministic_algorithms(True).
