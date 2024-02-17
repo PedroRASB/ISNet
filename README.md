@@ -21,6 +21,7 @@ AlternativeModels: Pytorch implementations of benchmark DNNs used in the paper (
 Defining a DenseNet121-based ISNet:
 
 import LRPDenseNet
+
 import ISNetLayers
 
 DenseNet=LRPDenseNet.densenet121(pretrained=False)
