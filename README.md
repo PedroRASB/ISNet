@@ -9,16 +9,19 @@ LRPDenseNet.py: code to create a DenseNet, based on the original TorchVision mod
 
 ISNetFunctions.py: functions to define the heatmap loss, and to propagate relevance through the LRP Block. 
 
-ISNetLayers.py: LRP Block layers.
+ISNetLayers.py: LRP Block layers and ISNet PyTorch model.
 
-globals.py: global variables, for skip connections between classifier and LRP block.
+globals.py: global variables, for communication between classifier and LRP block.
 
-ISNetLightning.py: PyTorch Lightning model of the ISNet, use for simple multi-GPU/multi-node training.
+ISNetLightning.py: PyTorch Lightning ISNet model, use for simple multi-GPU/multi-node training.
 
 AlternativeModels: Pytorch implementations of benchmark DNNs used in the paper (AG-Sononet, U-Net, multi-task U-Net, HAM and GAIN). For the standard DenseNet121, use the code in LRPDenseNet.py. For the AG-Sononet, please follow the installation instructions in https://github.com/ozan-oktay/Attention-Gated-Networks, afterwards, to create LRP heatmaps substitute the file sononet_grid_attention.py (in Attention-Gated-Networks-master/models/networks) by the version we provide, and employ the code in AGSononetLRP.py. For HAM, please visit https://github.com/oyxhust/HAM. We provide code to implement the DNN in PyTorch Lightning.
 
 ## ISNet Creation Example
-Defining a DenseNet121 based ISNet:
+Defining a DenseNet121-based ISNet:
+
+import LRPDenseNet
+import ISNetLayers
 
 DenseNet=LRPDenseNet.densenet121(pretrained=False)
 #change last layer if needed
@@ -31,4 +34,7 @@ Bassi, P.R.A.S., Dertkigil, S.S.J. & Cavalli, A. Improving deep neural network g
 ## Observations for the Training Procedure
 For better stability and convergence in the training procedure, we suggest employing gradient clipping (we used norm of 1) and deterministic operations, which may be selected with the following code: torch.use_deterministic_algorithms(True).
 
-A higher P hyper-parameter (heatmap loss weight) increases bias resistance, but reduces training speed. A lower d hyper-parameter (GWRP decay in the heatmap loss) also increases bias resistance, but reduces training stability. If training losses do not converge, please consider increasing the d hyper-parameter and/or reducing learning rate. 
+A higher P hyper-parameter (heatmap loss weight) increases bias resistance, but reduces training speed. A lower d hyper-parameter (GWRP decay in the heatmap loss) also increases bias resistance, but reduces training stability. If training losses do not converge, please consider increasing the d hyper-parameter and/or reducing learning rate.
+
+## Pre-trained Models
+For the applications in the paper (COVID-19 and Tuberculosis detection, CheXpert classification, dog breed classification and facial attribute estimation), please find the ISNet pre-trained weigths on: https://drive.google.com/drive/folders/1hIJp4c11R65db2K7EN4rYQ7dcr7ce72t?usp=sharing
