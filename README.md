@@ -19,18 +19,34 @@ AlternativeModels: Pytorch implementations of benchmark DNNs used in the paper (
 
 ## ISNet Creation Example
 Defining a DenseNet121-based ISNet:
-
+```
 import LRPDenseNet
-
 import ISNetLayers
 
 DenseNet=LRPDenseNet.densenet121(pretrained=False)
 #change last layer if needed
 
 net=ISNetLayers.IsDense(DenseNet,heat=True,e=1e-2, Zb=True)
+```
 
 ## Citation
 Bassi, P.R.A.S., Dertkigil, S.S.J. & Cavalli, A. Improving deep neural network generalization and robustness to background bias via layer-wise relevance propagation optimization. Nat Commun 15, 291 (2024). https://doi.org/10.1038/s41467-023-44371-z
+
+```
+@article{Bassi2024,
+  title = {Improving deep neural network generalization and robustness to background bias via layer-wise relevance propagation optimization},
+  volume = {15},
+  ISSN = {2041-1723},
+  url = {http://dx.doi.org/10.1038/s41467-023-44371-z},
+  DOI = {10.1038/s41467-023-44371-z},
+  number = {1},
+  journal = {Nature Communications},
+  publisher = {Springer Science and Business Media LLC},
+  author = {Bassi,  Pedro R. A. S. and Dertkigil,  Sergio S. J. and Cavalli,  Andrea},
+  year = {2024},
+  month = jan 
+}
+```
 
 ## Observations for the Training Procedure
 For better stability and convergence in the training procedure, we suggest employing gradient clipping (we used norm of 1) and deterministic operations, which may be selected with the following code: torch.use_deterministic_algorithms(True).
