@@ -1,4 +1,6 @@
-Official code for paper "Improving deep neural network generalization and robustness to background bias via layer-wise relevance propagation optimization" (https://www.nature.com/articles/s41467-023-44371-z), a background bias mitigation optimizaiton strategy (Nature Communications, 2024), readly applicable to any DNN architecture.
+Official code for paper "Improving deep neural network generalization and robustness to background bias via layer-wise relevance propagation optimization" (https://www.nature.com/articles/s41467-023-44371-z), a background bias mitigation optimizaiton strategy (Nature Communications, 2024).
+
+---
 
 Abstract:
 
@@ -16,6 +18,15 @@ globals.py: global variables, for communication between classifier and LRP block
 ISNetLightning.py: PyTorch Lightning ISNet model, use for simple multi-GPU/multi-node training.
 
 AlternativeModels: Pytorch implementations of benchmark DNNs used in the paper (AG-Sononet, U-Net, multi-task U-Net, HAM and GAIN). For the standard DenseNet121, use the code in LRPDenseNet.py. For the AG-Sononet, please follow the installation instructions in https://github.com/ozan-oktay/Attention-Gated-Networks, afterwards, to create LRP heatmaps substitute the file sononet_grid_attention.py (in Attention-Gated-Networks-master/models/networks) by the version we provide, and employ the code in AGSononetLRP.py. For HAM, please visit https://github.com/oyxhust/HAM. We provide code to implement the DNN in PyTorch Lightning.
+
+# Installation
+```bash
+conda create --name isnet python=3.8
+conda activate isnet
+conda install pip=23.3.2
+conda install ipykernel
+pip install -r requirements.txt
+```
 
 ## ISNet Creation Example
 Defining a DenseNet121-based ISNet:
