@@ -1,4 +1,4 @@
-Official code for paper "Improving deep neural network generalization and robustness to background bias via layer-wise relevance propagation optimization" (https://doi.org/10.1038/s41467-023-44371-z, https://www.nature.com/articles/s41467-023-44371-z), based on PyTorch (originally implemented with PyTorch version 1.11.0).
+Official code for paper "Improving deep neural network generalization and robustness to background bias via layer-wise relevance propagation optimization" (https://doi.org/10.1038/s41467-023-44371-z, https://www.nature.com/articles/s41467-023-44371-z), a background bias mitigation optimizaiton strategy (Nature Communications, 2024), readly applicable to any DNN architecture.
 
 Abstract:
 
