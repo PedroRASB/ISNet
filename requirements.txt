@@ -1,0 +1,14 @@
+#conda create --name isnet python=3.8
+#conda activate isnet
+#conda install pip=23.3.2
+#conda install ipykernel
+#pip install -r requirements.txt
+torch==1.11.0
+pytorch-lightning==1.6.3
+h5py
+scikit-learn
+matplotlib
+pandas
+opencv-python
+tqdm
+tensorboard
