@@ -12,7 +12,7 @@ Features in images’ backgrounds can spuriously correlate with the images’ cl
 ```bash
 conda create --name isnet python=3.8
 conda activate isnet
-conda install pip=23.3.2
+conda install pip=23.3.2 -c conda-forge
 conda install ipykernel
 pip install -r requirements.txt
 ```
