@@ -2,6 +2,12 @@ Official code for paper "Improving deep neural network generalization and robust
 
 ### Code usability and readme improvements comming soon
 
+### Faster ISNet
+
+The library below contains faster implementations of the ISNet (faster training), which are also easily applicable to **any classifier architecture!**
+
+https://github.com/PedroRASB/FasterISNet/
+
 ---
 
 Abstract:
