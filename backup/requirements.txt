@@ -1,0 +1,17 @@
+#conda create --name isnet python=3.8
+#conda activate isnet
+#conda install pip=23.3.2
+#conda install ipykernel
+#pip install torch==1.11.0+cu113 torchvision==0.12.0+cu113 --extra-index-url https://download.pytorch.org/whl/cu113
+#pip install -r requirements.txt
+torch==1.11.0
+torchvision==0.12.0
+pytorch-lightning==1.6.3
+h5py
+scikit-learn
+matplotlib
+pandas
+opencv-python
+tqdm
+tensorboard
+scikit-image
