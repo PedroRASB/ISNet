@@ -63,35 +63,37 @@ As shown in the figure above, the ISNet will not pay attention to the background
 ## Use LRP-Flex to explain an arbitrary DNN decision
 This repository also includes LRP-Flex, a easy to use methodology which creates LRP heatmaps for any classifier architecture in PyTorch. The Fatser ISNet is based on LRP-Flex.
 
-
-```
-import ISNetFlexTorch
-import LRPDenseNetZe
-
-#Examples of network and image
-DenseNet=LRPDenseNetZe.densenet121(pretrained=False)
-image=torch.randn([1,3,224,224])
-
-#LRP-Flex PyTorch Wrapper
-net=ISNetFlexTorch.ISNetFlex(model=DenseNet,
-                             architecture='densenet121',#write architecture name only for densenet, resnet and VGG
-                             selective=True,Zb=True,multiple=False,HiddenLayerPenalization=False,
-                             randomLogit=False,explainLabels=True)#set explainLabels=False when defining ISNet
-
-#Explain class 3
-out=net(image,runLRPFlex=True,labels=torch.tensor([3]))
-logits=out['output']
-heatmap=out['LRPFlex']['input']
-
-#Plot heatmap
-import matplotlib.pyplot as plt
-import matplotlib.colors as colors
-h=heatmap.squeeze().mean(0).detach().numpy()
-norm=colors.TwoSlopeNorm(vmin=h.min(), vcenter=0, vmax=h.max())
-plt.imshow(h,cmap='RdBu_r', norm=norm,interpolation='nearest')
-plt.show()
-```
-
+<details>
+  <summary><strong>Click to expand</strong></summary>
+  
+  ```
+  import ISNetFlexTorch
+  import LRPDenseNetZe
+  
+  #Examples of network and image
+  DenseNet=LRPDenseNetZe.densenet121(pretrained=False)
+  image=torch.randn([1,3,224,224])
+  
+  #LRP-Flex PyTorch Wrapper
+  net=ISNetFlexTorch.ISNetFlex(model=DenseNet,
+                               architecture='densenet121',#write architecture name only for densenet, resnet and VGG
+                               selective=True,Zb=True,multiple=False,HiddenLayerPenalization=False,
+                               randomLogit=False,explainLabels=True)#set explainLabels=False when defining ISNet
+  
+  #Explain class 3
+  out=net(image,runLRPFlex=True,labels=torch.tensor([3]))
+  logits=out['output']
+  heatmap=out['LRPFlex']['input']
+  
+  #Plot heatmap
+  import matplotlib.pyplot as plt
+  import matplotlib.colors as colors
+  h=heatmap.squeeze().mean(0).detach().numpy()
+  norm=colors.TwoSlopeNorm(vmin=h.min(), vcenter=0, vmax=h.max())
+  plt.imshow(h,cmap='RdBu_r', norm=norm,interpolation='nearest')
+  plt.show()
+  ```
+</details>
 
 ## Faster ISNet Creation Examples
 
@@ -100,7 +102,7 @@ Dependencies: Python, PyTorch, PyTorch Lightning
 #### LRP-Flex-based ISNets: An easy and fast way to make classifiers ignore backgrounds (Faster ISNet Paper)
 
 <details>
-  <summary><strong>Click to expand details</strong></summary>
+  <summary><strong>Click to expand</strong></summary>
 
   ```
   import LRPDenseNetZe
@@ -139,7 +141,7 @@ Dependencies: Python, PyTorch, PyTorch Lightning
 
 
 <details>
-  <summary><strong>Click to expand details</strong></summary>
+  <summary><strong>Click to expand</strong></summary>
 
   ```
   import ISNetLightningZe
@@ -159,7 +161,7 @@ Dependencies: Python, PyTorch, PyTorch Lightning
 ## Files and Content
 
 <details>
-  <summary><strong>Click to expand details</strong></summary>
+  <summary><strong>Click to expand</strong></summary>
 
   ### LRP-Flex-based ISNets:
 
