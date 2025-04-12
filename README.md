@@ -95,9 +95,9 @@ This repository also includes LRP-Flex, a easy to use methodology which creates 
   ```
 </details>
 
-## ISNet Creation & Converting your Architecture into an ISNet
+## ISNet Creation & Training your Architecture as an ISNet
 
-These examples show how to create an ISNet. The ISNet has multiple versions. As a starting point, we would the Selective ISNet, which almost matches the accuracy of the original ISNet, but trains faster. The code below starts a Pytorch Lightning network, which can be trained and tested using the standard Pytorch Lightning methods (see RunISNetFlex.py). Below, we use a DenseNet121 classifier as the ISNet, but you can train any architecture with the ISNet training methodology. Just avoid in-place operations and do not re-utilize ReLU layers across the network. I.e., define each ReLU operation as an individual PyTorch torch.nn.ReLU(). Then, the code below can automatically convert your architecture into an ISNet!
+These examples show how to create an ISNet. The ISNet has multiple versions. As a starting point, we would the Selective ISNet, which almost matches the accuracy of the original ISNet, but trains faster. The code below starts a Pytorch Lightning network, which can be trained and tested using the standard Pytorch Lightning methods (see RunISNetFlex.py). Below, we use a DenseNet121 classifier as the ISNet, but you can train any architecture with the ISNet training methodology. Just avoid in-place operations and do not re-utilize ReLU layers across the network. I.e., define each ReLU operation as an individual PyTorch torch.nn.ReLU(). Then, the code below can automatically prepare your architecture for ISNet training (a.k.a., background relevance minimization)!
 
 #### LRP-Flex-based ISNets: An easy and fast way to make classifiers ignore backgrounds (Faster ISNet Paper)
 
