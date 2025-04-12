@@ -1,7 +1,8 @@
 
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/ac189c06-30ab-4f6f-a912-74d902939f49" alt="ISNetLogo" width="200"/>
+  <img src="https://github.com/user-attachments/assets/e804dce9-9961-4a11-a046-3a7df4836552" alt="ISNetLogo" width="200"/>
 </div>
+
 
 # ISNet & Faster ISNet
 
