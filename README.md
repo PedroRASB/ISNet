@@ -66,7 +66,7 @@ This repository also includes LRP-Flex, a easy to use methodology which creates 
 <details>
   <summary><strong>Click to expand</strong></summary>
   
-  ```
+  ```python
   import ISNetFlexTorch
   import LRPDenseNetZe
   
@@ -104,7 +104,7 @@ These examples show how to create an ISNet. The ISNet has multiple versions. As 
 <details>
   <summary><strong>Click to expand</strong></summary>
 
-  ```
+  ```python
   import LRPDenseNetZe
   import ISNetFlexLightning
 
@@ -143,7 +143,7 @@ These examples show how to create an ISNet. The ISNet has multiple versions. As 
 <details>
   <summary><strong>Click to expand</strong></summary>
 
-  ```
+  ```python
   import ISNetLightningZe
 
   #Dual ISNet
