@@ -228,11 +228,21 @@ MNIST: http://yann.lecun.com/exdb/mnist/
 ## Citations
 If you use this code, please cite the papers below:
 
-Bassi, P. R. A. S., Decherchi, S., & Cavalli, A. (2024). Faster ISNet for Background Bias Mitigation on Deep Neural Networks. IEEE Access.
-
-Bassi, P.R.A.S., Dertkigil, S.S.J. & Cavalli, A. (2024). Improving deep neural network generalization and robustness to background bias via layer-wise relevance propagation optimization. Nature Communications 15, 291. https://doi.org/10.1038/s41467-023-44371-z
-
-BibTeX:
+```
+@article{Bassi2024,
+  title = {Improving deep neural network generalization and robustness to background bias via layer-wise relevance propagation optimization},
+  volume = {15},
+  ISSN = {2041-1723},
+  url = {http://dx.doi.org/10.1038/s41467-023-44371-z},
+  DOI = {10.1038/s41467-023-44371-z},
+  number = {1},
+  journal = {Nature Communications},
+  publisher = {Springer Science and Business Media LLC},
+  author = {Bassi,  Pedro R. A. S. and Dertkigil,  Sergio S. J. and Cavalli,  Andrea},
+  year = {2024},
+  month = jan 
+}
+```
 
 ```
 @ARTICLE{Bassi2024-qj,
@@ -249,20 +259,5 @@ BibTeX:
 
 ```
 
-```
-@article{Bassi2024,
-  title = {Improving deep neural network generalization and robustness to background bias via layer-wise relevance propagation optimization},
-  volume = {15},
-  ISSN = {2041-1723},
-  url = {http://dx.doi.org/10.1038/s41467-023-44371-z},
-  DOI = {10.1038/s41467-023-44371-z},
-  number = {1},
-  journal = {Nature Communications},
-  publisher = {Springer Science and Business Media LLC},
-  author = {Bassi,  Pedro R. A. S. and Dertkigil,  Sergio S. J. and Cavalli,  Andrea},
-  year = {2024},
-  month = jan 
-}
-```
 
 
