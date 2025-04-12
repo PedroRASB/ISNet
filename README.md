@@ -97,8 +97,6 @@ This repository also includes LRP-Flex, a easy to use methodology which creates 
 
 ## Faster ISNet Creation Examples
 
-Dependencies: Python, PyTorch, PyTorch Lightning
-
 #### LRP-Flex-based ISNets: An easy and fast way to make classifiers ignore backgrounds (Faster ISNet Paper)
 
 <details>
