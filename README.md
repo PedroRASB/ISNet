@@ -14,7 +14,7 @@ Natural and medical images (e.g., X-rays) coommonly present background features 
 - Bassi, P.R.A.S., Dertkigil, S.S.J. & Cavalli, A. Improving deep neural network generalization and robustness to background bias via layer-wise relevance propagation optimization. **Nature Communications** 15, 291 (2024). https://www.nature.com/articles/s41467-023-44371-z
 
 
-- Bassi, P. R. A. S., Decherchi, S., & Cavalli, A. (2024). Faster ISNet for Background Bias Mitigation on Deep Neural Networks. **IEEE Access**. https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=10681068
+- Bassi, P. R. A. S., Decherchi, S., & Cavalli, A. Faster ISNet for Background Bias Mitigation on Deep Neural Networks. **IEEE Access** (2024). https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=10681068
 
 
 ## Installation
