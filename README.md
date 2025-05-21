@@ -85,7 +85,7 @@ This repository also includes LRP-Flex, a easy to use methodology which creates 
   net=ISNetFlexTorch.ISNetFlex(model=DenseNet,
                                architecture='densenet121',#write architecture name only for densenet, resnet and VGG
                                selective=True,Zb=True,multiple=False,HiddenLayerPenalization=False,
-                               randomLogit=False,explainLabels=True)#set explainLabels=False when defining ISNet
+                               randomLogit=False,explainLabels=True)#set explainLabels=False when creating an ISNet you will train with
   
   #Explain class 3
   out=net(image,runLRPFlex=True,labels=torch.tensor([3]))
