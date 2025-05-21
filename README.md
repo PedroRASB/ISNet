@@ -65,6 +65,7 @@ This repository also includes LRP-Flex, a easy to use methodology which creates 
 
 <details>
   Important parameters:
+  
   - selective: can improve heatmaps, making heatmaps for different classes more different. Should only be used if you trained your network with softmax activation. Do not use it for networks trained with sigmoid (e.g., BCE loss).
   - Zb: can improve heatmaps, but you can check if your heatmaps look better with it or or off
   - eps: epsilon works like a noise filter. The higher, the less noisy the heatmaps. However, if it is too high, you may filter out values that are not noise, and end up with weak (or zero) heatmaps. Start with 0.01, but you can consider values from 0.00001 to 0.1.
